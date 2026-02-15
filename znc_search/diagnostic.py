@@ -4,9 +4,11 @@ Diagnostic script to check ZNC log structure
 """
 
 import os
+import getpass
 from datetime import datetime
 
-ZNC_BASE_PATH = '/home/klapvogn/.znc/users/klapvogn/networks'
+USERNAME = os.getenv('USERNAME', getpass.getuser())
+ZNC_BASE_PATH = os.path.expanduser(os.getenv('ZNC_BASE_PATH', f'~/.znc/users/{USERNAME}/networks'))
 
 def parse_log_date(filename):
     """Parse date from log filename"""
@@ -92,5 +94,6 @@ for network_id in os.listdir(ZNC_BASE_PATH):
                     print(f"    ✗ Error reading file: {e}")
             else:
                 print(f"    ⚠ File is empty!")
+
 
 print("\n" + "=" * 70)
