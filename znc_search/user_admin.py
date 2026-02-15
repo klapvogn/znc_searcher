@@ -33,6 +33,11 @@ load_dotenv()
 DB_PATH = os.path.expanduser(os.getenv('DB_PATH', '~/apps/znc_search/znc_logs.db'))
 DB_KEY = os.getenv('DB_KEY')  # Must match app.py
 
+# Validate required environment variables
+if not DB_KEY:
+    print("Error: DB_KEY not found in environment variables")
+    sys.exit(1)
+    
 def get_db():
     """Get database connection with encryption"""
     if not os.path.exists(DB_PATH):
@@ -329,3 +334,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
