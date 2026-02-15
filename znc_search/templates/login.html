@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - IRC Log Search</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon/android-chrome-512x512.png"> 
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon/android-chrome-192x192.png"> 
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/static/favicon/site.webmanifest">  
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .login-box {
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 15px;
+            background: #1a1a1a;
+            border: 2px solid #404040;
+            border-radius: 8px;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4a9eff;
+            background: #222;
+        }
+
+        .form-input::placeholder {
+            color: #666;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 158, 255, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #404040;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: #ff4444;
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message {
+            background: #52c97b;
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .twofa-section {
+            display: none;
+        }
+
+        .twofa-hint {
+            font-size: 13px;
+            color: #888;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: #4a9eff;
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            padding: 0;
+        }
+
+        .back-button:hover {
+            text-decoration: underline;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 3px solid #404040;
+            border-top: 3px solid #4a9eff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .lock-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="lock-icon">🔒</div>
+            <h1>IRC Log Search</h1>
+            <p>Secure Login Portal</p>
+        </div>
+
+        <div class="login-box">
+            <div id="error-message" class="error-message"></div>
+            <div id="success-message" class="success-message"></div>
+
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        class="form-input" 
+                        placeholder="Enter your username"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        class="form-input" 
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn" id="login-btn">Sign In</button>
+            </form>
+
+            <!-- 2FA Form -->
+            <div id="2fa-section" class="twofa-section">
+                <button type="button" class="back-button" onclick="goBack()">← Back to login</button>
+                
+                <form id="2fa-form">
+                    <div class="form-group">
+                        <label class="form-label" for="totp-code">Two-Factor Authentication Code</label>
+                        <input 
+                            type="text" 
+                            id="totp-code" 
+                            class="form-input" 
+                            placeholder="Enter 6-digit code"
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            autocomplete="one-time-code"
+                            required
+                        >
+                        <div class="twofa-hint">Enter the 6-digit code from your authenticator app</div>
+                    </div>
+
+                    <button type="submit" class="btn" id="2fa-btn">Verify & Sign In</button>
+                </form>
+            </div>
+
+            <div class="loading-spinner" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; color: #888;">Authenticating...</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>IRC Log Search • Secure Authentication</p>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const twoFASection = document.getElementById('2fa-section');
+        const twoFAForm = document.getElementById('2fa-form');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        const loading = document.getElementById('loading');
+
+        let currentUsername = '';
+        let currentPassword = '';
+
+        // Show error message
+        function showError(message) {
+            console.error('Error:', message);
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            console.log('Success:', message);
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        // Show loading
+        function showLoading(show) {
+            loading.style.display = show ? 'block' : 'none';
+            document.getElementById('login-btn').disabled = show;
+            document.getElementById('2fa-btn').disabled = show;
+        }
+
+        // Go back to login form
+        function goBack() {
+            loginForm.style.display = 'block';
+            twoFASection.style.display = 'none';
+            document.getElementById('totp-code').value = '';
+            errorMessage.style.display = 'none';
+        }
+
+        // Handle login form submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showError('Please enter both username and password');
+                return;
+            }
+
+            currentUsername = username;
+            currentPassword = password;
+
+            showLoading(true);
+            errorMessage.style.display = 'none';
+
+            try {
+                console.log('Attempting login for user:', username);
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                console.log('Login response status:', response.status);
+                const data = await response.json();
+                console.log('Login response data:', data);
+
+                if (response.ok) {
+                    if (data.requires_2fa) {
+                        // Show 2FA form
+                        console.log('2FA required');
+                        loginForm.style.display = 'none';
+                        twoFASection.style.display = 'block';
+                        showSuccess(data.message);
+                        document.getElementById('totp-code').focus();
+                    } else {
+                        // Login successful
+                        console.log('Login successful, redirecting...');
+                        showSuccess('Login successful! Redirecting...');
+                        setTimeout(() => {
+                            window.location.href = data.redirect || '/';
+                        }, 1000);
+                    }
+                } else {
+                    showError(data.error || 'Login failed');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Connection error. Please try again.');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Handle 2FA form submission
+        twoFAForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const totpCode = document.getElementById('totp-code').value;
+
+            if (!totpCode || totpCode.length !== 6) {
+                showError('Please enter a valid 6-digit code');
+                return;
+            }
+
+            showLoading(true);
+            errorMessage.style.display = 'none';
+
+            try {
+                console.log('Attempting 2FA verification...');
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: currentUsername,
+                        password: currentPassword,
+                        totp_code: totpCode
+                    })
+                });
+
+                console.log('2FA response status:', response.status);
+                const data = await response.json();
+                console.log('2FA response data:', data);
+
+                // Check if login was successful
+                if (response.ok && data.success) {
+                    console.log('2FA successful, redirecting...');
+                    showSuccess('Authentication successful! Redirecting...');
+                    setTimeout(() => {
+                        console.log('Redirecting to:', data.redirect || '/');
+                        window.location.href = data.redirect || '/';
+                    }, 1000);
+                } else {
+                    console.error('2FA failed:', data.error);
+                    showError(data.error || '2FA verification failed');
+                    document.getElementById('totp-code').value = '';
+                    document.getElementById('totp-code').focus();
+                }
+            } catch (error) {
+                console.error('2FA error:', error);
+                showError('Connection error. Please try again.');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Auto-focus username field on load
+        document.getElementById('username').focus();
+
+        // Handle Enter key in TOTP input
+        document.getElementById('totp-code').addEventListener('input', (e) => {
+            // Only allow numbers
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+    </script>
+</body>
+</html>

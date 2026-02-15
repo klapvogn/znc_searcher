@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IRC Log Search</title>  
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon/android-chrome-512x512.png"> 
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon/android-chrome-192x192.png"> 
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/static/favicon/site.webmanifest">   
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        .user-badge {
+            display: inline-block;
+            background: #404040;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #4a9eff;
+            margin-right: 10px;
+        }
+
+        .btn-icon {
+            background: #404040;
+            border: none;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-icon:hover {
+            background: #4a9eff;
+        }
+
+        .panel {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .panel-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #404040;
+        }
+
+        /* Statistics Dashboard */
+        .stats-panel {
+            background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100px;
+        }
+        
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin: 8px 0;
+        }
+
+        .stat-value.date-range {
+            font-size: 18px;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        
+        .required {
+            color: #ff4444;
+        }
+
+        .form-input,
+        input[type="text"],
+        input[type="password"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 14px;
+            background: #2d2d2d;
+            border: 2px solid #404040;
+            border-radius: 6px;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus,
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #4a9eff;
+        }
+
+        input::placeholder {
+            color: #666;
+        }
+        
+        .search-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .btn-primary,
+        button {
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover,
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 158, 255, 0.4);
+        }
+
+        .btn-primary:active,
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary:disabled,
+        button:disabled {
+            background: #404040;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Settings modal button overrides */
+        .settings-section .btn-primary {
+            background: #4a9eff;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 6px;
+        }
+
+        .settings-section .btn-primary:hover {
+            background: #357abd;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .settings-section .btn-danger {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        .settings-section .btn-danger:hover {
+            background: #cc0000;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .settings-section .btn-success {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        .settings-section .btn-success:hover {
+            background: #3da55f;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background: #ff4444;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-danger:hover {
+            background: #cc0000;
+        }
+
+        .btn-success {
+            background: #52c97b;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .checkbox-wrapper label {
+            margin: 0;
+            cursor: pointer;
+        }
+        
+        .results-container {
+            margin-top: 30px;
+        }
+        
+        .results-header {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            color: #4a9eff;
+            border: 1px solid #404040;
+        }
+        
+        .result-item {
+            border: 1px solid #404040;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+            background: #1a1a1a;
+        }
+        
+        .result-item:hover {
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.2);
+        }
+        
+        .result-header {
+            padding: 12px 15px;
+            background-color: #2d2d2d;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-header:hover {
+            background-color: #333;
+        }
+        
+        .result-meta {
+            font-size: 13px;
+            color: #888;
+            font-weight: 500;
+        }
+        
+        .result-content {
+            padding: 12px 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            background-color: #1a1a1a;
+            border-top: 1px solid #404040;
+            color: #e0e0e0;
+        }
+        
+        .context-container {
+            display: none;
+            background-color: #222;
+            border-top: 1px solid #404040;
+            padding: 15px;
+        }
+        
+        .context-container.visible {
+            display: block;
+        }
+        
+        .context-loading {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+        
+        .context-line {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            padding: 4px 8px;
+            margin: 2px 0;
+            border-radius: 2px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .line-number {
+            color: #666;
+            min-width: 50px;
+            text-align: right;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        
+        .line-content {
+            flex: 1;
+            word-break: break-word;
+            color: #e0e0e0;
+        }
+        
+        .context-line.matched {
+            background-color: #4a5c2a;
+            font-weight: 600;
+        }
+        
+        .expand-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        
+        .expand-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+        
+        .expand-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+        }
+        
+        .expand-btn:disabled {
+            background: #404040;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error {
+            color: #ff4444;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .success {
+            color: #52c97b;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #404040;
+            color: #666;
+            font-size: 12px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: #2d2d2d;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease;
+        }
+
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #4a9eff;
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #357abd;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #404040;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            color: #fff;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #888;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .close-btn:hover {
+            background: #404040;
+            color: #fff;
+        }
+
+        .settings-section {
+            margin-bottom: 24px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+
+        .settings-section h3 {
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+
+        .settings-section .form-group {
+            margin-bottom: 16px;
+        }
+
+        .settings-section .form-label {
+            margin-bottom: 8px;
+        }
+
+        .qr-code-container {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .qr-code-container img {
+            max-width: 150px;
+            border: 4px solid #404040;
+            border-radius: 8px;
+        }
+
+        .secret-key {
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin: 12px 0;
+            border: 1px solid #404040;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #52c97b;
+            color: #fff;
+        }
+
+        .alert-error {
+            background: #ff4444;
+            color: #fff;
+        }
+
+        .alert-info {
+            background: #4a9eff;
+            color: #fff;
+        }
+
+        .alert-warning {
+            background: #ffa500;
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .header-controls {
+                flex-wrap: wrap;
+            }
+
+            .container {
+                padding: 0 10px;
+            }
+            
+            .panel {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>IRC Log Search</h1>
+            <p>Search through IRC chat logs with context</p>
+            <div style="margin-top: 10px;">
+                <span class="user-badge" id="username-badge">👤 <span id="username-display">-</span></span>
+                <span class="user-badge" id="2fa-badge" style="display: none;">🔒 2FA Enabled</span>
+            </div>
+            
+            <div class="header-controls">
+                <button class="btn-icon" onclick="openSettings()">⚙️ Settings</button>
+                <button class="btn-icon" onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+
+        <!-- Statistics Dashboard -->
+        <div class="stats-panel">
+            <div class="panel-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.2); color: #fff;">Database Statistics</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotalLines">-</div>
+                    <div class="stat-label">Total Lines</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statNetworks">-</div>
+                    <div class="stat-label">Networks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statChannels">-</div>
+                    <div class="stat-label">Channels</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value date-range" id="statDateRange">-</div>
+                    <div class="stat-label">Date Range</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Panel -->
+        <div class="panel">
+            <div class="panel-header">Search Parameters</div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label" for="network">Network <span class="required">*</span></label>
+                    <select id="network" onchange="loadChannels()">
+                        <option value="">Select a network...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="channel">Channel (optional)</label>
+                    <select id="channel">
+                        <option value="">All channels</option>
+                    </select>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label class="form-label" for="query">Search Query <span class="required">*</span></label>
+                    <input type="text" id="query" placeholder="Enter search term...">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="startDate">Start Date (optional)</label>
+                    <input type="date" id="startDate">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="endDate">End Date (optional)</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+            
+            <div class="search-controls">
+                <button id="searchBtn" onclick="search()">Search</button>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="caseSensitive">
+                    <label for="caseSensitive">Case sensitive</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="results-container"></div>
+
+        <div class="footer">
+            <p>IRC Log Search v2.0 • Context-Aware Search</p>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="close-btn" onclick="closeSettings()">&times;</button>
+            </div>
+
+            <div id="settings-alert" style="display: none;"></div>
+
+            <!-- Change Password Section -->
+            <div class="settings-section">
+                <h3>🔑 Change Password</h3>
+                <form id="password-form" onsubmit="changePassword(event)">
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" id="current-password" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <input type="password" id="new-password" class="form-input" required minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" id="confirm-password" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Update Password</button>
+                </form>
+            </div>
+
+            <!-- Two-Factor Authentication Section -->
+            <div class="settings-section">
+                <h3>🔒 Two-Factor Authentication</h3>
+                <div id="2fa-status">
+                    <p style="color: #888; margin-bottom: 16px;">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let contextCache = {};
+        const EXPAND_LINES = 10;
+
+        // Check authentication and load user info
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user/info');
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const data = await response.json();
+                document.getElementById('username-display').textContent = data.username;
+                
+                // Check both possible field names for 2FA status
+                const is2FAEnabled = data.totp_enabled || data.two_factor_enabled || data['2fa_enabled'];
+                
+                if (is2FAEnabled) {
+                    document.getElementById('2fa-badge').style.display = 'inline-block';
+                }
+                
+                update2FAStatus(is2FAEnabled);
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Initialize
+        async function initialize() {
+            await checkAuth();
+            loadNetworks();
+            loadStats();
+        }
+
+        // Logout function
+        async function logout() {
+            if (!confirm('Are you sure you want to logout?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Logout failed:', error);
+                alert('Logout failed. Please try again.');
+            }
+        }
+
+        // Open settings modal
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+            checkAuth(); // Refresh user info
+        }
+
+        // Close settings modal
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+            document.getElementById('password-form').reset();
+            document.getElementById('settings-alert').style.display = 'none';
+        }
+
+        // Show alert in settings
+        function showSettingsAlert(message, type = 'success') {
+            const alert = document.getElementById('settings-alert');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Change password
+        async function changePassword(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (newPassword !== confirmPassword) {
+                showSettingsAlert('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                showSettingsAlert('Password must be at least 8 characters', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user/password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSettingsAlert('Password changed successfully!', 'success');
+                    document.getElementById('password-form').reset();
+                } else {
+                    showSettingsAlert(data.error || 'Failed to change password', 'error');
+                }
+            } catch (error) {
+                console.error('Password change failed:', error);
+                showSettingsAlert('Connection error. Please try again.', 'error');
+            }
+        }
+
+        // Update 2FA status display
+        function update2FAStatus(enabled) {
+            const statusDiv = document.getElementById('2fa-status');
+            
+            if (enabled) {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-success" style="margin-bottom: 16px;">
+                        ✓ Two-Factor Authentication is enabled
+                    </div>
+                    <button type="button" class="btn-danger" onclick="disable2FA()">
+                        Disable 2FA
+                    </button>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-info" style="margin-bottom: 16px;">
+                        Two-Factor Authentication adds an extra layer of security
+                    </div>
+                    <button type="button" class="btn-success" onclick="setup2FA()">
+                        Enable 2FA
+                    </button>
+                `;
+            }
+        }
+
+        // Setup 2FA
+        async function setup2FA() {
+            try {
+                const response = await fetch('/api/user/2fa/setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const statusDiv = document.getElementById('2fa-status');
+                    statusDiv.innerHTML = `
+                        <div class="alert alert-info" style="margin-bottom: 16px;">
+                            Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+                        </div>
+                        <div class="qr-code-container">
+                            <img src="${data.qr_code}" alt="QR Code">
+                        </div>
+                        <div style="margin: 16px 0;">
+                            <strong>Manual Entry Key:</strong>
+                            <div class="secret-key">${data.secret}</div>
+                        </div>
+                        <form onsubmit="enable2FA(event)">
+                            <div class="form-group">
+                                <label class="form-label">Enter verification code to confirm</label>
+                                <input type="text" id="verify-code" class="form-input" placeholder="6-digit code" maxlength="6" required>
+                            </div>
+                            <button type="submit" class="btn-success">Verify & Enable</button>
+                            <button type="button" class="btn-danger" onclick="cancel2FASetup()" style="margin-left: 8px;">Cancel</button>
+                        </form>
+                    `;
+                }
+            } catch (error) {
+                console.error('2FA setup failed:', error);
+                showSettingsAlert('Failed to setup 2FA. Please try again.', 'error');
+            }
+        }
+
+        // Enable 2FA
+        async function enable2FA(e) {
+            e.preventDefault();
+            
+            const code = document.getElementById('verify-code').value;
+            
+            try {
+                const response = await fetch('/api/user/2fa/enable', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: code
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSettingsAlert('2FA enabled successfully!', 'success');
+                    document.getElementById('2fa-badge').style.display = 'inline-block';
+                    setTimeout(() => {
+                        checkAuth();
+                    }, 1000);
+                } else {
+                    showSettingsAlert(data.error || 'Invalid verification code', 'error');
+                }
+            } catch (error) {
+                console.error('2FA enable failed:', error);
+                showSettingsAlert('Connection error. Please try again.', 'error');
+            }
+        }
+
+        // Disable 2FA
+        async function disable2FA() {
+            const password = prompt('Enter your password to disable 2FA:');
+            
+            if (!password) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user/2fa/disable', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSettingsAlert('2FA disabled successfully', 'success');
+                    document.getElementById('2fa-badge').style.display = 'none';
+                    setTimeout(() => {
+                        checkAuth();
+                    }, 1000);
+                } else {
+                    showSettingsAlert(data.error || 'Failed to disable 2FA', 'error');
+                }
+            } catch (error) {
+                console.error('2FA disable failed:', error);
+                showSettingsAlert('Connection error. Please try again.', 'error');
+            }
+        }
+
+        // Cancel 2FA setup
+        function cancel2FASetup() {
+            update2FAStatus(false);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                closeSettings();
+            }
+        };
+
+        function loadNetworks() {
+            fetch('/api/networks')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('network');
+                    select.innerHTML = '<option value="">Select a network...</option>';
+                    data.networks.forEach(network => {
+                        const option = document.createElement('option');
+                        option.value = network.id;
+                        option.textContent = network.name;
+                        select.appendChild(option);
+                    });
+                });
+        }
+
+        function loadStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('statTotalLines').textContent = data.total_entries.toLocaleString();
+                    document.getElementById('statNetworks').textContent = data.network_count;
+                    document.getElementById('statChannels').textContent = data.channel_count;
+                    
+                    if (data.date_range && data.date_range.start && data.date_range.end) {
+                        const startDate = new Date(data.date_range.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+                        const endDate = new Date(data.date_range.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+                        document.getElementById('statDateRange').textContent = `${startDate} - ${endDate}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading stats:', error);
+                });
+        }
+        
+        function loadChannels() {
+            const network = document.getElementById('network').value;
+            const channelSelect = document.getElementById('channel');
+            channelSelect.innerHTML = '<option value="">All channels</option>';
+            
+            if (!network) return;
+            
+            fetch(`/api/channels/${network}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.channels.forEach(channel => {
+                        const option = document.createElement('option');
+                        option.value = channel;
+                        option.textContent = channel;
+                        channelSelect.appendChild(option);
+                    });
+                });
+        }
+        
+        function search() {
+            const query = document.getElementById('query').value;
+            const network = document.getElementById('network').value;
+            const channel = document.getElementById('channel').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const caseSensitive = document.getElementById('caseSensitive').checked;
+            
+            if (!query || !network) {
+                alert('Please enter a search query and select a network');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="results-header">Searching...</div>';
+            
+            const searchBtn = document.getElementById('searchBtn');
+            searchBtn.disabled = true;
+            
+            contextCache = {};
+            
+            fetch('/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query,
+                    network,
+                    channel,
+                    start_date: startDate,
+                    end_date: endDate,
+                    case_sensitive: caseSensitive
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                searchBtn.disabled = false;
+                displayResults(data);
+            })
+            .catch(error => {
+                searchBtn.disabled = false;
+                resultsDiv.innerHTML = `<div class="error">Search failed: ${error.message}</div>`;
+            });
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (data.results.length === 0) {
+                resultsDiv.innerHTML = '<div class="results-header">No results found</div>';
+                return;
+            }
+            
+            let html = `<div class="results-header">Found ${data.total} results${data.truncated ? ' (showing first 1000)' : ''}</div>`;
+            
+            data.results.forEach((result, index) => {
+                const resultId = `result-${index}`;
+                html += `
+                    <div class="result-item">
+                        <div class="result-header" onclick="toggleContext('${resultId}', ${JSON.stringify(result).replace(/"/g, '&quot;')})">
+                            <div class="result-meta">
+                                ${result.network} ${result.channel} ${result.date} Line ${result.line}
+                            </div>
+                            <div>▼</div>
+                        </div>
+                        <div class="result-content">${escapeHtml(result.content)}</div>
+                        <div id="${resultId}" class="context-container"></div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function toggleContext(resultId, result) {
+            const container = document.getElementById(resultId);
+            
+            if (container.classList.contains('visible')) {
+                container.classList.remove('visible');
+                return;
+            }
+            
+            container.classList.add('visible');
+            
+            const cacheKey = `${result.network_id}:${result.channel}:${result.date}:${result.line}`;
+            if (contextCache[cacheKey]) {
+                displayContext(resultId, contextCache[cacheKey], result);
+                return;
+            }
+            
+            container.innerHTML = '<div class="context-loading">Loading context...</div>';
+            
+            fetch('/api/context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    network: result.network_id,
+                    channel: result.channel,
+                    date: result.date,
+                    line: result.line,
+                    lines_before: 2,
+                    lines_after: 2
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                contextCache[cacheKey] = data;
+                displayContext(resultId, data, result);
+            })
+            .catch(error => {
+                container.innerHTML = `<div class="error">Failed to load context: ${error.message}</div>`;
+            });
+        }
+        
+        function displayContext(resultId, data, result) {
+            const container = document.getElementById(resultId);
+            
+            let html = '';
+            
+            if (data.can_expand_up) {
+                const linesAbove = data.start_line - 1;
+                html += `<div class="expand-buttons">
+                    <button class="expand-btn" onclick="expandContext('${resultId}', ${JSON.stringify(result).replace(/"/g, '&quot;')}, 'up')">
+                        ↑ Load ${Math.min(EXPAND_LINES, linesAbove)} more lines above (${linesAbove} remaining)
+                    </button>
+                </div>`;
+            }
+            
+            data.context.forEach(line => {
+                const className = line.is_match ? 'context-line matched' : 'context-line';
+                html += `
+                    <div class="${className}">
+                        <span class="line-number">${line.line}</span>
+                        <span class="line-content">${escapeHtml(line.content)}</span>
+                    </div>
+                `;
+            });
+            
+            if (data.can_expand_down) {
+                const linesBelow = data.total_lines - data.end_line;
+                html += `<div class="expand-buttons">
+                    <button class="expand-btn" onclick="expandContext('${resultId}', ${JSON.stringify(result).replace(/"/g, '&quot;')}, 'down')">
+                        ↓ Load ${Math.min(EXPAND_LINES, linesBelow)} more lines below (${linesBelow} remaining)
+                    </button>
+                </div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function expandContext(resultId, result, direction) {
+            const cacheKey = `${result.network_id}:${result.channel}:${result.date}:${result.line}`;
+            const currentData = contextCache[cacheKey];
+            
+            if (!currentData) return;
+            
+            let lines_before = result.line - currentData.start_line;
+            let lines_after = currentData.end_line - result.line;
+            
+            if (direction === 'up') {
+                lines_before += EXPAND_LINES;
+            } else {
+                lines_after += EXPAND_LINES;
+            }
+            
+            const container = document.getElementById(resultId);
+            container.innerHTML = '<div class="context-loading">Loading more context...</div>';
+            
+            fetch('/api/context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    network: result.network_id,
+                    channel: result.channel,
+                    date: result.date,
+                    line: result.line,
+                    lines_before: lines_before,
+                    lines_after: lines_after
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                contextCache[cacheKey] = data;
+                displayContext(resultId, data, result);
+            })
+            .catch(error => {
+                container.innerHTML = `<div class="error">Failed to expand context: ${error.message}</div>`;
+            });
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Enter key handling
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('query')?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') search();
+            });
+        });
+
+        // Start initialization
+        initialize();
+    </script>
+</body>
+</html>

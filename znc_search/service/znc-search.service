@@ -1,0 +1,15 @@
+[Unit]
+Description=ZNC Log Search with Encrypted Database
+After=network.target
+
+[Service]
+Type=notify
+User=klapvogn
+WorkingDirectory=/home/klapvogn/apps/znc_search
+Environment="PATH=/home/klapvogn/apps/znc_search/venv/bin"
+ExecStart=/home/klapvogn/apps/znc_search/venv/bin/gunicorn -w 4 -b 0.0.0.0:5000 app:app
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
