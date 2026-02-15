@@ -15,10 +15,20 @@ import os
 import sys
 import hashlib
 from pysqlcipher3 import dbapi2 as sqlite
+from dotenv import load_dotenv
+import getpass
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configuration - should match app.py
-DB_PATH = '/home/klapvogn/apps/znc_search/znc_logs.db'
-DB_KEY = '28ab2972b162ccc779d905cb6b422cd707d0470aef68c4289b41fa8ea42fb7df'
+DB_PATH = os.path.expanduser(os.getenv('DB_PATH', '~/apps/znc_search/znc_logs.db'))
+DB_KEY = os.getenv('DB_KEY')
+
+# Validate required environment variables
+if not DB_KEY:
+    print("Error: DB_KEY not found in environment variables")
+    sys.exit(1)
 
 def hash_password(password):
     """Hash password using SHA256"""
