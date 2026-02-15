@@ -22,13 +22,23 @@ import sys
 import argparse
 from datetime import datetime
 from pysqlcipher3 import dbapi2 as sqlite
+from dotenv import load_dotenv
+import getpass
 import shutil
 
+# Load environment variables from .env file
+load_dotenv()
+
 # Configuration - should match app.py
-DB_PATH = '/home/klapvogn/apps/znc_search/znc_logs.db'
-DB_KEY = '28ab2972b162ccc779d905cb6b422cd707d0470aef68c4289b41fa8ea42fb7df'  # Must match app.py
+DB_PATH = os.path.expanduser(os.getenv('DB_PATH', '~/apps/znc_search/znc_logs.db'))
+DB_KEY = os.getenv('DB_KEY')  # Must match app.py
 BACKUP_DIR = 'backup'  # Directory for backups (relative to script location)
 
+# Validate required environment variables
+if not DB_KEY:
+    print("Error: DB_KEY not found in environment variables")
+    sys.exit(1)
+    
 def get_db():
     """Get database connection with encryption"""
     if not os.path.exists(DB_PATH):
